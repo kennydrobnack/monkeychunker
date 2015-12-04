@@ -43,13 +43,16 @@ tweets = 0
 
 #Sample Tweets from Twitter stream until time is up.
 word_counts = Hash.new
+last_progress_shown = Time.now
 client.sample do |object|
 	current_time = Time.now
 	break if current_time >= end_time 
-	if current_time.sec % 60 == 0
-		puts "."
-	elsif current_time.sec % 10 == 0
+	if last_progress_shown.sec != current_time.sec
 		print "."
+		if (last_progress_shown.sec) % 60 == 0
+			print "\n"
+		end
+		last_progress_shown = current_time
 	end
 	#I'm ignoring non-English tweets so the results aren't all in Korean or Japanese or anything else I don't know how to read at all. 
 	# Unicode could still have some weird stuff show up like 💦
@@ -67,6 +70,7 @@ client.sample do |object|
   		end
   	end
 end
+print "\n" #Finish up the progress indicator
 
 puts "Top 10 words by count in #{tweets} Tweets: #{word_counts.sort_by{|word, count| count}.reverse.take(10)}"
 
