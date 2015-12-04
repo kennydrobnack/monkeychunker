@@ -1,4 +1,9 @@
+#Consumer & access key & token are required to connect to Twitter streaming API.
+# You'll need to sign up for an account & generate these to access it.
 consumer_key        : "YOUR_CONSUMER_KEY"
 consumer_secret     : "YOUR_CONSUMER_SECRET"
 access_token        : "YOUR_ACCESS_TOKEN"
 access_token_secret : "YOUR_ACCESS_SECRET"
+#Ignore words are words that are useless/not interesting and will be ignored in word counts.
+#	Including RT so we don't pick up every RT in retweet as a "word"
+ignore_words		: "the,a,an,you,i,and,or,to,in,of,is,from,my,me,that,rt,be,on,it,your,for"

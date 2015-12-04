@@ -1,33 +1,30 @@
+#!/usr/bin/env ruby
 require 'twitter'
 require 'optparse' 
 require 'yaml'
 
-default_config = 'config.yaml'
-config_file = default_config
 
-maxtime = 2  #Default to read tweets for 10 seconds
-maxtweets = 5 #Default to not limit number of tweets
+#Handle command line options - time to run for & config file 
+options = {:config_file => 'config.yaml', :time => 2}  
+optparse = OptionParser.new do |opts|    
+	opts.banner = "Usage: monkeychunker.rb [--time SECONDS] [--config FILE_NAME]"
+	opts.on( '-t', '--time [TIME]', "Time to collect Tweets (in seconds" ) do|t|
+		options[:time] = t || default_max_time
+	end
+	opts.on( '-c', '--config_file [CONFIG_FILE]', "Config file" ) do|config_file|
+		options[:config_file] = config_file || default_config
+	end
+	opts.on( '-h', '--help', 'Display this screen' ) do     
+		puts opts     
+		exit   
+	end
+	opts.parse!
+end  
 
-stop_words = ['a', 'the', 'and', 'or']
-
-# This hash will hold all of the options # parsed from the command-line by 
-# OptionParser. 
-options = {}  
-optparse = OptionParser.new do |opts|   
-	# Set a banner, displayed at the top   
-	# of the help screen.   
-	opts.banner = "Usage: optparse1.rb [options] file1 file2 ..."
-  # This displays the help screen, all programs are   
-  # assumed to have this option.   
-  opts.on( '-h', '--help', 'Display this screen' ) do     
-  	puts opts     
-  	exit   
-  end
-end  # Parse the command-line. Remember there are two forms # of the parse method. The 'parse' method simply parses # ARGV, while the 'parse!' method parses ARGV and removes # any options found there, as well as any parameters for # the options. What's left is the list of files to resize. optparse.parse!
-
-
-puts "Loading config from #{config_file}"
-yaml_config = YAML.load_file(config_file)
+#Load in Twitter connection info from config.yaml file. Secret keys should not be hard-coded into code.
+# Words to ignore are also in config file so that can be tweaked without changing actual code.
+puts "Loading config from #{options[:config_file]} and running for #{options[:time]} seconds"
+yaml_config = YAML.load_file(options[:config_file])
 
 client = Twitter::Streaming::Client.new do |config|
   config.consumer_key        = yaml_config['consumer_key']
@@ -35,26 +32,30 @@ client = Twitter::Streaming::Client.new do |config|
   config.access_token        = yaml_config['access_token']
   config.access_token_secret = yaml_config['access_token_secret']
 end
+stop_words = yaml_config['ignore_words'].downcase.split(',')
 
-tweets = 0
-time = 0
-
-word_counts = Hash.new
-
+#List when we're starting & ending collection of Tweets
 start_time = Time.now
-puts "Starting at #{start_time}"
-end_time = start_time + maxtime
-puts "Ending time #{end_time}"
+end_time = start_time + Integer(options[:time])
+puts "Collecting Tweets from Twitter streaming API starting at #{start_time} ending at #{end_time}"
+tweets = 0
 
 
+#Sample Tweets from Twitter stream until time is up.
+word_counts = Hash.new
 client.sample do |object|
 	current_time = Time.now
 	break if current_time >= end_time
+	#I'm ignoring non-English tweets so the results aren't all in Korean or Japanese or anything else I don't know how to read at all. 
+	# Unicode could still have some weird stuff show up like 💦
 	if object.is_a?(Twitter::Tweet) and object.lang == 'en'
+		tweets += 1
   		words = object.text.split(' ')
-  		words.each do |word|
-  			next if stop_words.include?(word)
+  		words.each do |word| 
+  			#Downcasing everything so tHinGs like tHis don't MaTTer
+  			word.downcase!
   			unless word_counts.has_key?(word)
+  			next if stop_words.include?(word) 
   				word_counts[word] = 0
   			end
   			word_counts[word] += 1
@@ -62,7 +63,7 @@ client.sample do |object|
   	end
 end
 
-puts "Top 10 words by count: #{word_counts.sort_by{|word, count| count}.reverse.take(10)}"
+puts "Top 10 words by count in #{tweets} Tweets: #{word_counts.sort_by{|word, count| count}.reverse.take(10)}"
 
 
 
