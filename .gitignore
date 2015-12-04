@@ -1,0 +1,4 @@
+#config.yaml has the Twitter Secret keys. Don't add it to git repo.
+#config.yaml.sample is fine though
+
+config.yaml
