@@ -45,7 +45,12 @@ tweets = 0
 word_counts = Hash.new
 client.sample do |object|
 	current_time = Time.now
-	break if current_time >= end_time
+	break if current_time >= end_time 
+	if current_time.sec % 60 == 0
+		puts "."
+	elsif current_time.sec % 10 == 0
+		print "."
+	end
 	#I'm ignoring non-English tweets so the results aren't all in Korean or Japanese or anything else I don't know how to read at all. 
 	# Unicode could still have some weird stuff show up like 💦
 	if object.is_a?(Twitter::Tweet) and object.lang == 'en'
